@@ -1,0 +1,1 @@
+cd "d:\SHA All about\VS_CODE\SmartHomeIoT\FrontEnd"
