@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Home Automation</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <!-- PWA -->
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#4194bb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SmartHome">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
+
+</head>
+<body>
+  <header>
+    <div class="top-bar">
+      <a href="/" class="home-btn" title="Home">HOME</a>
+      <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">
+        🌙 <span class="toggle-label">Dark</span>
+      </button>
+    </div>
+    
+    <h1>Smart Home Automation</h1>
+
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search a feature..." oninput="filterCards()" />
+    </div>
+    
+
+    <div class="account-btn">
+      {% if username %}
+        <div class="dropdown">
+          <button onclick="toggleDropdown()" class="dropbtn">👤 {{ username.split(' ')[0] }}</button>
+          <div id="myDropdown" class="dropdown-content">
+            <a href="/logout">Logout</a>
+          </div>
+        </div>
+      {% else %}
+        <a href="/loginpage" title="Login / Signup" class="home-btn">👤 Account</a>
+      {% endif %}
+    </div>
+    
+    
+    
+  </header>
+  
+
+  <!-- <div style="text-align: center; margin: 10px;">
+    <button onclick="document.body.classList.toggle('dark-theme')">Toggle Dark Mode</button>
+  </div> -->
+
+  <!-- Room Tabs Card -->
+  <div style="width:100%; max-width:900px; padding:0 20px; margin-bottom:20px;">
+    <div class="room-tabs-card">
+      <button class="room-tab active" id="tab-living"  onclick="switchRoom('living')" >🛋️ Living</button>
+      <button class="room-tab"       id="tab-bedroom" onclick="switchRoom('bedroom')">🛏️ Bedroom</button>
+      <button class="room-tab"       id="tab-kitchen" onclick="switchRoom('kitchen')">🍳 Kitchen</button>
+      <button class="room-tab"       id="tab-balcony" onclick="switchRoom('balcony')">🌿 Balcony</button>
+      <button class="room-tab"       id="tab-common"  onclick="switchRoom('common')" >🏠 Common</button>
+    </div>
+  </div>
+
+  <main class="grid-container" id="room-content-wrapper">
+
+    <!-- ===================== LIVING ROOM ===================== -->
+    <div class="room-section" id="room-living">
+
+      <section class="card">
+        <h2>💡 Lights</h2>
+        <button onclick="toggleLight('living')">Toggle Light</button>
+        <p id="living-light-status">Light is OFF</p>
+      </section>
+
+      <section class="card">
+        <h2>🌀 Fan Speed</h2>
+        <input type="range" min="0" max="5" id="living-fanSpeed" onchange="setFanSpeed(this.value,'living')">
+        <p id="living-fan-status">Fan speed: 0</p>
+      </section>
+
+      <section class="card">
+        <h2>🪟 Curtains</h2>
+        <button onclick="toggleCurtain('living')">Open/Close Curtains</button>
+        <p id="living-curtain-status">Curtains are Closed</p>
+      </section>
+
+      <section class="card">
+        <h2>🔆 Light Dimmer</h2>
+        <input type="range" min="0" max="100" value="50" id="living-dimmer" oninput="updateDimmer(this.value,'living')">
+        <p id="living-dimmer-status">Brightness: 50%</p>
+      </section>
+
+      <section class="card">
+        <h2>👁️ Motion Activated Light</h2>
+        <button onclick="detectMotion('living')">Detect Motion</button>
+        <p id="living-motion-status">Light is OFF</p>
+      </section>
+
+      <section class="card">
+        <h2>🌙 Day/Night Light</h2>
+        <button onclick="checkDaylight(true,'living')">Simulate Darkness</button>
+        <p id="living-daylight-status">Light OFF</p>
+      </section>
+
+      <section class="card">
+        <h2>🏠 Room Occupancy</h2>
+        <button onclick="roomOccupied(true,'living')">Enter Room</button>
+        <button onclick="roomOccupied(false,'living')">Leave Room</button>
+        <p id="living-room-status">Room is empty</p>
+      </section>
+
+      <section class="card">
+        <h2>⏰ Schedule Control</h2>
+        <label>Device to Schedule:</label>
+        <select id="living-scheduleDevice" style="margin-bottom:10px;">
+          <option value="light">💡 Light</option>
+          <option value="fan">🌀 Fan</option>
+          <option value="curtain">🪟 Curtain</option>
+        </select>
+        <label>Turn ON:</label>
+        <input type="time" id="living-onTime"><br><br>
+        <label>Turn OFF:</label>
+        <input type="time" id="living-offTime"><br><br>
+        <button onclick="setSchedule('living')">Set Schedule</button>
+        <p id="living-schedule-status">No schedule set</p>
+        <div id="living-schedule-list" style="margin-top:10px; font-size:12px; color:var(--label-color);"></div>
+      </section>
+
+      <section class="card">
+        <h2>📊 Energy Monitoring</h2>
+        <button onclick="showEnergyUsage()">Check Usage</button>
+        <p id="energy-status">No data</p>
+      </section>
+
+      <section class="card">
+        <h2>🎤 Gesture Control</h2>
+        <p style="font-size:13px; color:var(--label-color); margin-bottom:10px;">Controls Living Room light & fan</p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button onclick="startGesture()">▶ Start</button>
+          <button onclick="stopGesture()">⏹ Stop</button>
+        </div>
+        <p id="gesture-status" style="margin-top:12px;">Status: <span id="gesture-state">Stopped</span></p>
+        <p id="gesture-action" style="font-size:13px; color:#81d4fa; margin-top:4px;"></p>
+        <div style="margin-top:12px; font-size:12px; color:var(--label-color); line-height:1.8;">
+          🖐 Open hand → Light toggle<br>
+          ✊ Fist → Fan ON/OFF<br>
+          👍 Thumbs up → Speed +1<br>
+          👎 Thumbs down → Speed -1
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ===================== BEDROOM ===================== -->
+    <div class="room-section" id="room-bedroom" style="display:none;">
+
+      <section class="card">
+        <h2>💡 Lights</h2>
+        <button onclick="toggleLight('bedroom')">Toggle Light</button>
+        <p id="bedroom-light-status">Light is OFF</p>
+      </section>
+
+      <section class="card">
+        <h2>🌀 Fan Speed</h2>
+        <input type="range" min="0" max="5" id="bedroom-fanSpeed" onchange="setFanSpeed(this.value,'bedroom')">
+        <p id="bedroom-fan-status">Fan speed: 0</p>
+      </section>
+
+      <section class="card">
+        <h2>🪟 Curtains</h2>
+        <button onclick="toggleCurtain('bedroom')">Open/Close Curtains</button>
+        <p id="bedroom-curtain-status">Curtains are Closed</p>
+      </section>
+
+      <section class="card">
+        <h2>🔆 Light Dimmer</h2>
+        <input type="range" min="0" max="100" value="50" id="bedroom-dimmer" oninput="updateDimmer(this.value,'bedroom')">
+        <p id="bedroom-dimmer-status">Brightness: 50%</p>
+      </section>
+
+      <section class="card">
+        <h2>🌡️ Room Temperature</h2>
+        <input type="number" id="bedroom-tempInput" placeholder="Enter temperature" onchange="checkTemperature('bedroom')">
+        <p id="bedroom-temp-message">Room is normal</p>
+      </section>
+
+      <section class="card">
+        <h2>❄️ AC Control</h2>
+        <button id="bedroom-ac-btn" onclick="toggleAC('bedroom')" style="width:100%;">❄️ Turn AC ON</button>
+        <p id="bedroom-ac-status">AC is OFF</p>
+      </section>
+
+      <section class="card">
+        <h2>⚡ Inverter Status</h2>
+        <button id="bedroom-inverter-btn" onclick="toggleInverter('bedroom')" style="width:100%;">⚡ Turn Inverter ON</button>
+        <p id="bedroom-inverter-status">Inverter OFF</p>
+      </section>
+
+      <section class="card">
+        <h2>🔋 Inverter Smart Control</h2>
+        <label>Battery Percentage:</label>
+        <input type="number" id="bedroom-batteryLevel" min="0" max="100" placeholder="e.g., 75">
+        <button onclick="checkInverterStatus('bedroom')">Check Status</button>
+        <p id="bedroom-inverterStatus">Status will appear here...</p>
+      </section>
+
+      <section class="card">
+        <h2>💧 Water Level</h2>
+        <input type="range" min="0" max="100" value="40" oninput="checkWaterLevel(this.value)">
+        <p id="water-status">Water Level: 40%</p>
+      </section>
+
+      <section class="card">
+        <h2>⏰ Schedule Control</h2>
+        <label>Device to Schedule:</label>
+        <select id="bedroom-scheduleDevice" style="margin-bottom:10px;">
+          <option value="light">💡 Light</option>
+          <option value="fan">🌀 Fan</option>
+          <option value="ac">❄️ AC</option>
+        </select>
+        <label>Turn ON:</label>
+        <input type="time" id="bedroom-onTime"><br><br>
+        <label>Turn OFF:</label>
+        <input type="time" id="bedroom-offTime"><br><br>
+        <button onclick="setSchedule('bedroom')">Set Schedule</button>
+        <p id="bedroom-schedule-status">No schedule set</p>
+        <div id="bedroom-schedule-list" style="margin-top:10px; font-size:12px; color:var(--label-color);"></div>
+      </section>
+
+      <section class="card">
+        <h2>🌙 Day/Night Light</h2>
+        <button onclick="checkDaylight(true,'bedroom')">Simulate Darkness</button>
+        <p id="bedroom-daylight-status">Light OFF</p>
+      </section>
+
+    </div>
+
+    <!-- ===================== KITCHEN ===================== -->
+    <div class="room-section" id="room-kitchen" style="display:none;">
+
+      <section class="card">
+        <h2>💡 Lights</h2>
+        <button onclick="toggleLight('kitchen')">Toggle Light</button>
+        <p id="kitchen-light-status">Light is OFF</p>
+      </section>
+
+      <section class="card">
+        <h2>🌀 Exhaust Fan</h2>
+        <input type="range" min="0" max="5" id="kitchen-fanSpeed" onchange="setFanSpeed(this.value,'kitchen')">
+        <p id="kitchen-fan-status">Fan speed: 0</p>
+      </section>
+
+      <section class="card">
+        <h2>⚠️ Gas Leak Detection</h2>
+        <button onclick="detectGas()">Simulate Gas Leak</button>
+        <p id="gas-status">All clear</p>
+      </section>
+
+      <section class="card">
+        <h2>🔥 Smoke Detection</h2>
+        <button onclick="detectSmoke()">Simulate Smoke</button>
+        <p id="smoke-status">No smoke detected</p>
+      </section>
+
+      <section class="card">
+        <h2>🔥 Fire Alert</h2>
+        <button onclick="fireAlert()">Simulate Fire</button>
+        <p id="fire-status">Safe</p>
+      </section>
+
+      <section class="card">
+        <h2>🌧️ Rain Detection</h2>
+        <button onclick="detectRain()">Simulate Rain</button>
+        <p id="rain-status">No rain</p>
+      </section>
+
+      <section class="card">
+        <h2>🌿 Plant Watering</h2>
+        <button onclick="checkSoil()">Check Soil</button>
+        <p id="plant-status">Soil status unknown</p>
+      </section>
+
+    </div>
+
+    <!-- ===================== BALCONY ===================== -->
+    <div class="room-section" id="room-balcony" style="display:none;">
+
+      <section class="card">
+        <h2>💡 Lights</h2>
+        <button onclick="toggleLight('balcony')">Toggle Light</button>
+        <p id="balcony-light-status">Light is OFF</p>
+      </section>
+
+      <section class="card">
+        <h2>🌿 Plant Watering</h2>
+        <button onclick="checkSoil('balcony')">Check Soil</button>
+        <p id="balcony-plant-status">Soil status unknown</p>
+      </section>
+
+      <section class="card">
+        <h2>🐶 Pet Feeder</h2>
+        <button onclick="feedPet()">Feed Now</button>
+        <p id="pet-status">Pet not fed yet</p>
+      </section>
+
+      <section class="card">
+        <h2>🐾 Pet Feeder Automation</h2>
+        <label>Feeding Time:</label>
+        <input type="time" id="feedTime"><br><br>
+        <label>Grace Delay (minutes):</label>
+        <input type="number" id="graceDelay" placeholder="e.g., 10"><br><br>
+        <button onclick="setPetFeederAutomation()">Set Schedule</button>
+        <p id="pet-feeder-status"></p>
+      </section>
+
+    </div>
+
+    <!-- ===================== COMMON ===================== -->
+    <div class="room-section" id="room-common" style="display:none;">
+
+      <section class="card">
+        <h2>🔓 Smart Door Lock</h2>
+        <input type="password" id="doorPassword" placeholder="Enter password">
+        <button onclick="unlockDoor()">Unlock</button>
+        <p id="lock-status">Door is Locked</p>
+      </section>
+
+      <section class="card">
+        <h2>🔔 Smart Bell</h2>
+        <button onclick="ringBell()">Press Door Bell</button>
+        <p id="bell-status">No visitor</p>
+      </section>
+
+      <section class="card">
+        <h2>🚪 Auto Door Opener</h2>
+        <button onclick="approachDoor()">Simulate Approach</button>
+        <p id="auto-door-status">No one nearby</p>
+      </section>
+
+      <section class="card">
+        <h2>🚨 Intruder Detection</h2>
+        <button onclick="detectIntruder()">Check for Intruder</button>
+        <p id="intruder-status">All safe</p>
+      </section>
+
+      <!-- FACE RECOGNITION + MUSIC SYSTEM -->
+      <section class="card" style="grid-column: 1 / -1;">
+        <h2>🤖 Smart Face Recognition</h2>
+
+        <!-- Status Bar -->
+        <div id="face-task-bar" style="display:none; padding:10px 14px; border-radius:10px; background:var(--input-bg); border:1px solid var(--card-border); margin-bottom:14px; font-size:13px; color:var(--card-title-color);">
+          <span id="face-task-msg">...</span>
+        </div>
+
+        <!-- Recognize Button -->
+        <button onclick="faceRecognize()" style="width:100%; font-size:15px; padding:12px; margin-bottom:8px;">
+          📷 Scan &amp; Identify Face
+        </button>
+        <p id="face-result" style="font-size:13px; color:var(--label-color); margin-bottom:16px;"></p>
+
+        <hr style="border:none; border-top:1px solid var(--card-border); margin:12px 0;">
+
+        <!-- Register New User -->
+        <h3 style="font-size:15px; color:var(--card-title-color); margin-bottom:10px;">👤 Register New Person</h3>
+        <input type="text" id="face-reg-name" placeholder="Enter name (e.g. Binod)" style="margin-bottom:0;">
+        <button onclick="faceRegister()" style="width:100%; margin-top:8px;">
+          📸 Start Registration (Camera opens — show face for 30 sec)
+        </button>
+
+        <hr style="border:none; border-top:1px solid var(--card-border); margin:16px 0;">
+
+        <!-- User Profiles -->
+        <h3 style="font-size:15px; color:var(--card-title-color); margin-bottom:10px;">🎛️ User Profiles</h3>
+        <div id="face-users-list">
+          <p style="font-size:13px; color:var(--label-color);">Go to Common tab to manage profiles.</p>
+        </div>
+      </section>
+
+      <!-- MUSIC PLAYER -->
+      <section class="card" style="grid-column: 1 / -1;">
+        <h2>🎵 Music Player</h2>
+        <p style="font-size:13px; color:var(--label-color); margin-bottom:12px;">
+          Music auto-plays when a face is recognized. You can also search manually.
+        </p>
+
+        <!-- Now Playing -->
+        <div style="padding:10px 14px; border-radius:10px; background:var(--input-bg); border:1px solid var(--card-border); margin-bottom:14px;">
+          <span id="music-title" style="font-size:13px; color:var(--card-title-color);">No song playing</span><br>
+          <span id="music-status-text" style="font-size:11px; color:var(--label-color);">Stopped</span>
+        </div>
+
+        <!-- Audio Player -->
+        <audio id="music-audio" controls style="width:100%; margin-bottom:14px; border-radius:10px; outline:none; display:none;"></audio>
+
+        <!-- Manual Search -->
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <input type="text" id="music-search-input" placeholder="Search a song... (e.g. Arijit Singh)" style="flex:1; margin:0;">
+          <button onclick="musicPlay()" style="margin:0; padding:10px 16px; white-space:nowrap;">▶ Play</button>
+        </div>
+
+        <!-- Controls -->
+        <div style="display:flex; gap:8px;">
+          <button onclick="musicStop()" style="flex:1; margin:0; background:linear-gradient(135deg,#c62828,#b71c1c);">⏹ Stop</button>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ===================== VOICE COMMANDS (always visible) ===================== -->
+    <section class="card" style="grid-column: 1 / -1;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 1px solid var(--card-border); padding-bottom:10px;">
+        <h2 style="margin-bottom:0; border:none; padding:0;">🎤 Voice Commands</h2>
+        <button id="voiceBtn" onclick="startVoice()" style="margin-top:0; padding:8px 18px; font-size:14px;">🎤 Start Voice</button>
+      </div>
+      <p id="voice-status" style="font-size:14px; color:var(--label-color); margin-bottom:12px;">Press button and speak a command...</p>
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:8px; font-size:12px; color:var(--label-color);">
+        <div>💡 "turn on light"</div>
+        <div>🌀 "fan speed 3"</div>
+        <div>🪟 "open curtain"</div>
+        <div>🔓 "unlock door"</div>
+        <div>🔆 "brightness 70"</div>
+        <div>🐶 "feed pet"</div>
+      </div>
+    </section>
+
+    <!-- Activity Log -->
+    <section class="card" style="grid-column: 1 / -1;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 1px solid var(--card-border); padding-bottom:10px;">
+        <h2 style="margin-bottom:0; border:none; padding:0;">📋 Activity Log</h2>
+        <button onclick="clearLog()" style="margin-top:0; padding:6px 14px; font-size:13px;">🗑 Clear</button>
+      </div>
+      <div id="activity-log" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
+        <p style="color:var(--label-color); font-size:13px; text-align:center; padding:20px 0;">No activity yet. Start using the dashboard!</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p> </p>
+  </footer>
+
+<!-- Socket.IO client -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+<script>
+  // --- WebSocket Setup ---
+  const socket = io();
+
+  // Live state update — multi-room
+  socket.on("state_update", function(state) {
+    ["living","bedroom","kitchen","balcony"].forEach(room => {
+      const r = state[room];
+      if (!r) return;
+      const el = (id) => document.getElementById(id);
+      if (el(`${room}-light-status`))
+        el(`${room}-light-status`).textContent = `Light is ${r.light ? 'ON' : 'OFF'}`;
+      if (el(`${room}-fan-status`))
+        el(`${room}-fan-status`).textContent = `Fan speed: ${r.fan_speed}`;
+      if (el(`${room}-fanSpeed`))
+        el(`${room}-fanSpeed`).value = r.fan_speed;
+      if (el(`${room}-curtain-status`))
+        el(`${room}-curtain-status`).textContent = `Curtains are ${r.curtain ? 'Open' : 'Closed'}`;
+      if (el(`${room}-dimmer-status`))
+        el(`${room}-dimmer-status`).textContent = `Brightness: ${r.dimmer}%`;
+      if (el(`${room}-dimmer`))
+        el(`${room}-dimmer`).value = r.dimmer;
+      if (el(`${room}-inverter-status`))
+        el(`${room}-inverter-status`).textContent =
+          r.inverter ? "Inverter ON – Low Power Mode" : "Inverter OFF – Full Power";
+    });
+  });
+
+  // Live log update
+  socket.on("log_update", function(entries) {
+    const box = document.getElementById("activity-log");
+    if (!box) return;
+    if (entries.length === 0) {
+      box.innerHTML = '<p style="color:var(--label-color); font-size:13px; text-align:center; padding:20px 0;">No activity yet. Start using the dashboard!</p>';
+      return;
+    }
+    box.innerHTML = entries.map(e => `
+      <div style="display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:8px; background:var(--input-bg); border:1px solid var(--card-border); font-size:13px;">
+        <span style="font-size:16px;">${e.icon}</span>
+        <span style="color:var(--body-color); flex:1;">${e.message}</span>
+        <span style="color:var(--label-color); white-space:nowrap;">${e.time}</span>
+      </div>`).join('');
+  });
+
+  // --- Face Recognition WebSocket ---
+  socket.on("face_task", function(data) {
+    const icon = data.status === 'error' ? '❌' : data.status === 'done' ? '✅' : '⏳';
+    if (typeof faceShowTask === 'function')
+      faceShowTask(`${icon} ${data.message}`);
+    if (data.status === 'done' && typeof faceLoadUsers === 'function')
+      faceLoadUsers();
+  });
+
+  socket.on("face_recognized", function(data) {
+    const resultEl = document.getElementById('face-result');
+    if (data.name !== 'Unknown') {
+      const musicInfo = data.play_music
+        ? `🎵 Playing: ${data.profile.music || '...'}`
+        : `🤫 No music (show open palm next time)`;
+      if (resultEl) resultEl.innerHTML =
+        `<span style="color:#66bb6a; font-weight:600;">✅ ${data.message}</span><br>
+         <span style="font-size:12px; color:var(--label-color);">
+           💡 ${data.profile.light?'ON':'OFF'} &nbsp;|&nbsp;
+           🌀 Fan ${data.profile.fan_speed} &nbsp;|&nbsp;
+           🔆 ${data.profile.dimmer}% &nbsp;|&nbsp;
+           ❄️ AC ${data.profile.ac?'ON':'OFF'}
+         </span><br>
+         <span style="font-size:12px; color:${data.play_music ? '#81d4fa' : '#90a4ae'};">
+           ${musicInfo}
+         </span>`;
+      if (typeof faceShowTask === 'function') faceShowTask(`✅ ${data.message}`);
+
+      // Auto-play music in browser if palm was open
+      if (data.play_music && data.profile.music) {
+        if (typeof musicSearchAndPlay === 'function')
+          musicSearchAndPlay(data.profile.music);
+      }
+    } else {
+      if (resultEl) resultEl.innerHTML =
+        `<span style="color:#ef5350;">❌ ${data.message}</span>`;
+      if (typeof faceShowTask === 'function') faceShowTask(`❌ ${data.message}`);
+    }
+    loadLog();
+  });
+
+  // --- Music WebSocket ---
+  socket.on("music_update", function(data) {
+    const titleEl  = document.getElementById('music-title');
+    const statusEl = document.getElementById('music-status-text');
+    if (titleEl)  titleEl.textContent  = data.title  || 'No song playing';
+    if (statusEl) statusEl.textContent = data.status || 'Stopped';
+  });
+
+  // --- Room Tab Switching ---
+  const ROOM_ORDER = ['living','bedroom','kitchen','balcony','common'];
+  let currentRoomIndex = 0;
+
+  function switchRoom(room) {
+    const newIndex = ROOM_ORDER.indexOf(room);
+    const direction = newIndex > currentRoomIndex ? 'slide-right' : 'slide-left';
+    currentRoomIndex = newIndex;
+
+    const wrapper = document.getElementById('room-content-wrapper');
+
+    // Hide all rooms
+    document.querySelectorAll('.room-section').forEach(s => {
+      s.classList.remove('visible');
+      s.style.display = 'none';
+    });
+    document.querySelectorAll('.room-tab').forEach(t => t.classList.remove('active'));
+    wrapper.classList.remove('slide-right', 'slide-left');
+
+    // Show selected room
+    const section = document.getElementById(`room-${room}`);
+    section.style.display = 'contents';
+    section.classList.add('visible');
+    document.getElementById(`tab-${room}`).classList.add('active');
+
+    void wrapper.offsetWidth;
+    wrapper.classList.add(direction);
+    setTimeout(() => wrapper.classList.remove('slide-right', 'slide-left'), 400);
+
+    // Load face users when Common tab opens
+    if (room === 'common') {
+      setTimeout(() => { if (typeof faceLoadUsers === 'function') faceLoadUsers(); }, 150);
+    }
+
+    localStorage.setItem('activeRoom', room);
+  }
+
+  // Restore last active room
+  (function() {
+    const saved = localStorage.getItem('activeRoom') || 'living';
+    currentRoomIndex = ROOM_ORDER.indexOf(saved);
+    if (currentRoomIndex < 0) currentRoomIndex = 0;
+    // No animation on first load
+    document.querySelectorAll('.room-section').forEach(s => s.classList.remove('visible'));
+    document.querySelectorAll('.room-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(`tab-${saved}`).classList.add('active');
+    document.getElementById(`room-${saved}`).classList.add('visible');
+  })();
+
+  // --- Restore saved device states on page load ---
+  document.addEventListener('DOMContentLoaded', function() {
+    fetch('/get_state')
+      .then(res => res.json())
+      .then(state => {
+        ["living","bedroom","kitchen","balcony"].forEach(room => {
+          const r = state[room];
+          if (!r) return;
+          const el = (id) => document.getElementById(id);
+          if (el(`${room}-light-status`))
+            el(`${room}-light-status`).textContent = `Light is ${r.light ? 'ON' : 'OFF'}`;
+          if (el(`${room}-fan-status`))
+            el(`${room}-fan-status`).textContent = `Fan speed: ${r.fan_speed}`;
+          if (el(`${room}-fanSpeed`))
+            el(`${room}-fanSpeed`).value = r.fan_speed;
+          if (el(`${room}-curtain-status`))
+            el(`${room}-curtain-status`).textContent = `Curtains are ${r.curtain ? 'Open' : 'Closed'}`;
+          if (el(`${room}-dimmer-status`))
+            el(`${room}-dimmer-status`).textContent = `Brightness: ${r.dimmer}%`;
+          if (el(`${room}-dimmer`))
+            el(`${room}-dimmer`).value = r.dimmer;
+          if (el(`${room}-inverter-status`))
+            el(`${room}-inverter-status`).textContent =
+              r.inverter ? 'Inverter ON – Low Power Mode' : 'Inverter OFF – Full Power';
+        });
+      });
+  });
+
+  // --- Activity Log ---
+  // loadLog aur clearLog ab script.js mein hain
+
+  // Log page load par ek baar load hoga
+  document.addEventListener('DOMContentLoaded', function() { loadLog(); });
+
+  // --- Theme Toggle ---
+  function toggleTheme() {
+    const isLight = document.body.classList.toggle('light-theme');
+    const btn = document.getElementById('themeBtn');
+    btn.innerHTML = isLight ? '☀️ <span class="toggle-label">Light</span>' : '🌙 <span class="toggle-label">Dark</span>';
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  }
+
+  // Apply saved theme on page load
+  (function() {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light') {
+      document.body.classList.add('light-theme');
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('themeBtn');
+        if (btn) btn.innerHTML = '☀️ <span class="toggle-label">Light</span>';
+      });
+    }
+  })();
+
+  // --- Dropdown ---
+  function toggleDropdown() {
+    document.getElementById("myDropdown").classList.toggle("show");
+  }
+
+  // Close dropdown if clicked outside
+  window.onclick = function(event) {
+    if (!event.target.matches('.dropbtn')) {
+      var dropdowns = document.getElementsByClassName("dropdown-content");
+      for (var i = 0; i < dropdowns.length; i++) {
+        if (dropdowns[i].classList.contains('show')) {
+          dropdowns[i].classList.remove('show');
+        }
+      }
+    }
+  }
+</script>
+
+
+
+  
+<script>
+  // --- Gesture Control ---
+  let gesturePolling = null;
+
+  function startGesture() {
+    fetch("/start_gesture", { method: "POST" })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("gesture-action").textContent = data.message;
+        if (data.success) {
+          document.getElementById("gesture-state").textContent = "Running ✅";
+          document.getElementById("gesture-state").style.color = "#66bb6a";
+          startGesturePolling();
+        }
+      });
+  }
+
+  function stopGesture() {
+    fetch("/stop_gesture", { method: "POST" })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("gesture-action").textContent = data.message;
+        document.getElementById("gesture-state").textContent = "Stopped ⏹";
+        document.getElementById("gesture-state").style.color = "#90a4ae";
+        stopGesturePolling();
+      });
+  }
+
+  function startGesturePolling() {
+    if (gesturePolling) return;
+    let lastAction = "";
+    gesturePolling = setInterval(() => {
+      fetch("/gesture_status")
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "running") {
+            document.getElementById("gesture-state").textContent = "Running ✅";
+            document.getElementById("gesture-state").style.color = "#66bb6a";
+          } else if (data.status === "error") {
+            document.getElementById("gesture-state").textContent = "Error ❌";
+            document.getElementById("gesture-state").style.color = "#ef5350";
+            stopGesturePolling();
+          } else {
+            document.getElementById("gesture-state").textContent = "Stopped ⏹";
+            document.getElementById("gesture-state").style.color = "#90a4ae";
+            stopGesturePolling();
+          }
+          if (data.last_action) {
+            document.getElementById("gesture-action").textContent = data.last_action;
+            // state_update aur log_update ab WebSocket se automatically aayenge
+          }
+        });
+    }, 1000);
+  }
+
+  function stopGesturePolling() {
+    clearInterval(gesturePolling);
+    gesturePolling = null;
+  }
+</script>
+
+<script>
+  // --- PWA Service Worker Register ---
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/static/service-worker.js')
+        .then(() => console.log('✅ Service Worker registered'))
+        .catch(err => console.log('❌ SW Error:', err));
+    });
+  }
+</script>
+
+</body>
+</html>

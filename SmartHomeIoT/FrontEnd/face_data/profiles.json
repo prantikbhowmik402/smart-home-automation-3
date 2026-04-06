@@ -1,0 +1,42 @@
+{
+  "prantik": {
+    "light": true,
+    "fan_speed": 2,
+    "dimmer": 70,
+    "curtain": false,
+    "ac": false,
+    "inverter": false,
+    "music": "",
+    "greeting": "Welcome home!"
+  },
+  "prantik2": {
+    "light": true,
+    "fan_speed": 2,
+    "dimmer": 70,
+    "curtain": false,
+    "ac": false,
+    "inverter": false,
+    "music": "",
+    "greeting": "Welcome home!"
+  },
+  "ml": {
+    "ac": false,
+    "curtain": false,
+    "dimmer": 70,
+    "fan_speed": 2,
+    "greeting": "Welcome home!",
+    "inverter": false,
+    "light": true,
+    "music": "krishna song"
+  },
+  "Prantik": {
+    "ac": false,
+    "curtain": false,
+    "dimmer": 70,
+    "fan_speed": 2,
+    "greeting": "Welcome home!",
+    "inverter": false,
+    "light": true,
+    "music": "Bangla melody "
+  }
+}
